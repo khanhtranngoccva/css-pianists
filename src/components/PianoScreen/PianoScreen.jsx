@@ -3,6 +3,6 @@ import Piano from "../Piano/Piano";
 
 export default function PianoScreen() {
     return <div className={classes.pianoScreen}>
-        <Piano></Piano>
-    </div>
+        <Piano mode="play"></Piano>
+    </div>;
 }

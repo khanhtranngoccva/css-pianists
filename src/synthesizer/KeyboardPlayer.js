@@ -43,4 +43,3 @@ window.addEventListener("keypress", (e) => {
         STATE.manualInputOctave += 1;
     }
 });
-
