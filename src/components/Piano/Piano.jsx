@@ -97,8 +97,8 @@ export default function Piano(props) {
         }
     });
 
-    return <Canvas perspectiveY={"-50vw"} perspective={"30vw"} allowRotate={true} minRotX={-5} maxRotX={5} minRotY={-5}
-                   maxRotY={5}>
+    return <Canvas perspectiveY={"-50vw"} perspective={"30vw"} allowRotate={true} minRotX={-2} maxRotX={2} minRotY={-2}
+                   maxRotY={2}>
         <div className={classes.piano}>
             {whiteKeyButtons}
             {blackKeyButtons}
