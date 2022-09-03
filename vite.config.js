@@ -7,5 +7,13 @@ export default defineConfig({
     plugins: [
         nodePolyfills({include: "events"}),
         react(),
-    ]
+    ],
+    server: {
+        proxy: {
+            "/api": {
+                target: "http://localhost:5000",
+                changeOrigin: true,
+            }
+        }
+    }
 });

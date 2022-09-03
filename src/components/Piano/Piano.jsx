@@ -6,14 +6,14 @@ import SynthesizerPiano from "../../synthesizer/Synthesizer";
 import {KEYMAP, STATE} from "../../synthesizer/KeyboardPlayer";
 import {BLACK_KEYS, WHITE_KEYS, middleWhiteKeyIndex, middleBlackKeyIndex} from "../../synthesizer/generateKeyNames";
 import * as apiHelpers from "../../helpers/api";
-import {hop} from "@onehop/client";
-import { useReadChannelState } from "@onehop/react";
+import hopClient from "../../helpers/hopClient";
+import {useReadChannelState} from "@onehop/react";
 
 const pianoSynth = new SynthesizerPiano({
     velocities: 10,
 });
 
-const channelId = 'group_chat_123'
+const defaultChannelId = "__default__";
 
 // TODO: Set active to true or false based on keypress events and live data from Hop.
 function PianoKey(props) {
@@ -29,6 +29,9 @@ function PianoKey(props) {
 }
 
 export default function Piano(props) {
+
+    const {state} = useReadChannelState(defaultChannelId);
+
     const [keyStateData, changeKeyStateData] = React.useState(() => {
         const keyState = [].concat(WHITE_KEYS, BLACK_KEYS).filter(Boolean).reduce((acc, item) => {
             acc[item] = false;
@@ -37,21 +40,6 @@ export default function Piano(props) {
         return {keyState};
     });
 
-    const client = hop.init({
-        projectId: "project_NTA1MTQwOTkyNDU4ODM1OTc"
-    });
-
-    client.on('MESSAGE',({event,data}) => {
-        console.log(event,data)
-        console.log(KEYMAP[data.key])
-        if(event == 'Received'){
-            console.log(data)
-        } else {
-            client.sendMessage(channelId,'Received', 'RECEIVED THE MESSAGE')
-        }
-    })
-
-    const {state} = useReadChannelState(channelId)
 
     function activateKey(key) {
         keyStateData.keyState[key] = true;
@@ -66,42 +54,64 @@ export default function Piano(props) {
     const keyupHandlerRef = React.useRef(function keyupHandler(e) {
         const mappedKey = KEYMAP[e.key];
         if (!mappedKey) return;
-        const currentKey = mappedKey[0] + (STATE.manualInputOctave + mappedKey[1]);
-        if (keyStateData.keyState[currentKey]) {
-            deactivateKey(currentKey);
+        const currentNote = mappedKey[0] + (STATE.manualInputOctave + mappedKey[1]);
+        if (keyStateData.keyState[currentNote]) {
+            deactivateKey(currentNote);
             apiHelpers.sendNoteToServer({
-                op: "keyup", key: currentKey,
+                operation: "keyup", note: currentNote,
             });
         }
     });
 
     const keydownHandlerRef = React.useRef(function keydownHandler(e) {
         const mappedKey = KEYMAP[e.key];
-        console.log(e.key)
         if (!mappedKey) return;
-        const currentKey = mappedKey[0] + (STATE.manualInputOctave + mappedKey[1]);
-        if (!keyStateData.keyState[currentKey]) {
-            activateKey(currentKey);
+        const currentNote = mappedKey[0] + (STATE.manualInputOctave + mappedKey[1]);
+        if (!keyStateData.keyState[currentNote]) {
+            activateKey(currentNote);
             apiHelpers.sendNoteToServer({
-                op: "keydown",
-                key: currentKey,
+                operation: "keydown", note: currentNote,
             });
         }
     });
+
+    const realtimeHandlerRef = React.useRef(function realtimeHandler({event, data}) {
+        const {note, operation, timestamp} = data;
+        const timeUntilTimestamp = apiHelpers.getTimeUntilServerNow(timestamp);
+
+        setTimeout(() => {
+            if (operation === "keydown") {
+                activateKey(note);
+            } else if (operation === "keyup") {
+                deactivateKey(note);
+            }
+        }, timeUntilTimestamp)
+    })
 
     React.useEffect(() => {
         if (props.mode === "watch") {
             window.removeEventListener("keydown", keydownHandlerRef.current);
             window.removeEventListener("keyup", keyupHandlerRef.current);
+            console.log("Activated live listening");
+            console.log(realtimeHandlerRef.current);
+            hopClient.on("MESSAGE", realtimeHandlerRef.current);
         } else {
             window.addEventListener("keydown", keydownHandlerRef.current);
             window.addEventListener("keyup", keyupHandlerRef.current);
+            try {
+                hopClient.off("MESSAGE", realtimeHandlerRef.current);
+            } catch (e) {
+            }
         }
         return () => {
             window.removeEventListener("keydown", keydownHandlerRef.current);
             window.removeEventListener("keyup", keyupHandlerRef.current);
+            try {
+                hopClient.off("MESSAGE", realtimeHandlerRef.current);
+            } catch (e) {
+            }
         }
-    }, [props.mode]);
+    }, [props.mode, props.channelId]);
 
     const whiteKeyButtons = WHITE_KEYS.map((key, index) => {
         const indexGap = index - middleWhiteKeyIndex;
