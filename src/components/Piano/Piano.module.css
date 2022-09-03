@@ -1,0 +1,37 @@
+.piano {
+    --bigKeyLength: 1.8vw;
+    --bigKeyWidth: 7vw;
+}
+
+.piano .pianoKey {
+    --width: var(--bigKeyWidth);
+    --height: 1.5vw;
+    --length: var(--bigKeyLength);
+    --topBackground: white;
+    --leftBackground: #c4c4c4;
+    --frontBackground: #e7e7e7;
+    --rightBackground: #c4c4c4;
+    --backBackground: #e7e7e7;
+    --bottomBackground: #c4c4c4;
+
+}
+
+.piano .blackKey {
+    --topBackground: #606060;
+    --leftBackground: #444444;
+    --rightBackground: #444444;
+    --frontBackground: #545454;
+    --backBackground: #545454;
+    --bottomBackground: #2f2f2f;
+    --length: 1.2vw;
+    --width: 5vw;
+}
+
+.keyActive {
+    transform: rotateX(-5deg);
+}
+
+.pianoKeyInner {
+    transform-origin: 0 calc(var(--height) / -2) calc(var(--width) / -2);
+    transition: transform 0.05s linear;
+}

@@ -8,8 +8,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tonejs/piano": "^0.2.1",
+    "events": "^3.3.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "rollup-plugin-polyfill-node": "^0.10.2"
   },
   "devDependencies": {
     "@types/react": "^18.0.17",

@@ -1,3 +1,106 @@
-export default function Piano() {
+import ReusableBox from "../../../react-dimension-css/ReusableBox/ReusableBox";
+import Canvas from "../../../react-dimension-css/Canvas/Canvas";
+import classes from "./Piano.module.css"
+import React from "react";
+import SynthesizerPiano from "../../synthesizer/Synthesizer";
+import {STATE, KEYMAP} from "../../synthesizer/KeyboardPlayer";
 
+let WHITE_KEYS = [];
+for (let i = 0; i <= 8; i++) {
+    for (let baseNote of "CDEFGAB") {
+        WHITE_KEYS.push(baseNote + i);
+    }
+}
+WHITE_KEYS = WHITE_KEYS.slice(5, -6);
+
+const middleWhiteKeyIndex = WHITE_KEYS.indexOf("E4");
+
+let BLACK_KEYS = [];
+for (let i = 0; i <= 7; i++) {
+    for (let baseNote of "CD FGA ") {
+        if (baseNote === " ") BLACK_KEYS.push(undefined); else BLACK_KEYS.push(baseNote + "#" + i);
+    }
+}
+BLACK_KEYS = BLACK_KEYS.slice(5);
+
+const middleBlackKeyIndex = BLACK_KEYS.indexOf("D#4");
+console.log(BLACK_KEYS);
+
+const pianoSynth = new SynthesizerPiano({
+    velocities: 10,
+});
+
+// TODO: Set active to true or false based on keypress events and live data from Hop.
+function PianoKey(props) {
+    if (props.active) {
+        console.log("Key press on " + props.keyValue);
+        pianoSynth.triggerAttack({note: props.keyValue});
+    } else {
+        pianoSynth.triggerRelease({note: props.keyValue});
+    }
+
+    return <div className={`${classes.pianoKey} ${props.className || ""}`} style={props.style}>
+        <ReusableBox className={`${classes.pianoKeyInner} ${props.active ? classes.keyActive : ""}`}></ReusableBox>
+    </div>
+}
+
+export default function Piano() {
+    const [keyStateData, changeKeyStateData] = React.useState(() => {
+        const keyState = [].concat(WHITE_KEYS, BLACK_KEYS).filter(Boolean).reduce((acc, item) => {
+            acc[item] = false;
+            return acc;
+        }, {});
+        return {keyState};
+    });
+
+    function activateKey(key) {
+        if (!keyStateData.keyState[key]) {
+            keyStateData.keyState[key] = true;
+            changeKeyStateData({keyState: keyStateData.keyState});
+        }
+    }
+
+    function deactivateKey(key) {
+        if (keyStateData.keyState[key]) {
+            keyStateData.keyState[key] = false;
+            changeKeyStateData({keyState: keyStateData.keyState});
+        }
+    }
+
+    window.onkeydown = function(e) {
+        const mappedKey = KEYMAP[e.key];
+        if (!mappedKey) return;
+        const currentKey = mappedKey[0] + (STATE.manualInputOctave + mappedKey[1]);
+        activateKey(currentKey);
+    }
+
+    window.onkeyup = function(e) {
+        const mappedKey = KEYMAP[e.key];
+        if (!mappedKey) return;
+        const currentKey = mappedKey[0] + (STATE.manualInputOctave + mappedKey[1]);
+        deactivateKey(currentKey);
+    }
+
+    const whiteKeyButtons = WHITE_KEYS.map((key, index) => {
+        const indexGap = index - middleWhiteKeyIndex;
+        return <PianoKey style={{
+            transform: `translateX(calc(var(--bigKeyLength) * ${indexGap}))`,
+        }} key={key} keyValue={key} active={keyStateData.keyState[key]}></PianoKey>
+    });
+
+    const blackKeyButtons = BLACK_KEYS.map((key, index) => {
+        const indexGap = index - middleBlackKeyIndex;
+        if (key) {
+            return <PianoKey className={classes.blackKey} style={{
+                transform: `translateX(calc(var(--bigKeyLength) * ${indexGap} - var(--bigKeyLength) / 2)) translateY(calc(var(--height) / -2)) translateZ(calc((var(--bigKeyWidth) - var(--width)) / -2))`,
+            }} key={key} keyValue={key} active={keyStateData.keyState[key]}></PianoKey>
+        }
+    });
+
+    return <Canvas perspectiveY={"-50vw"} perspective={"30vw"} allowRotate={true} minRotX={-5} maxRotX={5} minRotY={-5} maxRotY={5}>
+        <div className={classes.piano}>
+            {whiteKeyButtons}
+            {blackKeyButtons}
+        </div>
+    </Canvas>;
 }

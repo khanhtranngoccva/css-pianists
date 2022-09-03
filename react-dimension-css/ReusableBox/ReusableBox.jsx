@@ -1,9 +1,22 @@
 import classes from "../DimensionCSS.module.css";
 
-
+/**
+ *
+ * @param props.width
+ * @param props.height
+ * @param props.length
+ * @param props.topBackground
+ * @param props.leftBackground
+ * @param props.rightBackground
+ * @param props.bottomBackground
+ * @param props.backBackground
+ * @param props.style
+ * @return {JSX.Element}
+ * @constructor
+ */
 export default function ReusableBox(props) {
-    console.log("Rendered");
     return <div className={`${classes.box} ${props.className || ""}`} style={{
+        ...props.style,
         "--width": props.width,
         "--height": props.height,
         "--length": props.length,
