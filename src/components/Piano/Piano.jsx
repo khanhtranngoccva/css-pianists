@@ -6,10 +6,14 @@ import SynthesizerPiano from "../../synthesizer/Synthesizer";
 import {KEYMAP, STATE} from "../../synthesizer/KeyboardPlayer";
 import {BLACK_KEYS, WHITE_KEYS, middleWhiteKeyIndex, middleBlackKeyIndex} from "../../synthesizer/generateKeyNames";
 import * as apiHelpers from "../../helpers/api";
+import {hop} from "@onehop/client";
+import { useReadChannelState } from "@onehop/react";
 
 const pianoSynth = new SynthesizerPiano({
     velocities: 10,
 });
+
+const channelId = 'group_chat_123'
 
 // TODO: Set active to true or false based on keypress events and live data from Hop.
 function PianoKey(props) {
@@ -32,6 +36,22 @@ export default function Piano(props) {
         }, {});
         return {keyState};
     });
+
+    const client = hop.init({
+        projectId: "project_NTA1MTQwOTkyNDU4ODM1OTc"
+    });
+
+    client.on('MESSAGE',({event,data}) => {
+        console.log(event,data)
+        console.log(KEYMAP[data.key])
+        if(event == 'Received'){
+            console.log(data)
+        } else {
+            client.sendMessage(channelId,'Received', 'RECEIVED THE MESSAGE')
+        }
+    })
+
+    const {state} = useReadChannelState(channelId)
 
     function activateKey(key) {
         keyStateData.keyState[key] = true;
@@ -57,6 +77,7 @@ export default function Piano(props) {
 
     const keydownHandlerRef = React.useRef(function keydownHandler(e) {
         const mappedKey = KEYMAP[e.key];
+        console.log(e.key)
         if (!mappedKey) return;
         const currentKey = mappedKey[0] + (STATE.manualInputOctave + mappedKey[1]);
         if (!keyStateData.keyState[currentKey]) {
